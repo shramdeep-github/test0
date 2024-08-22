@@ -1,30 +1,40 @@
+# Configure the Azure provider
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.0.0"
+    }
+  }
+  required_version = ">= 0.14.9"
+}
 provider "azurerm" {
   features {}
 }
 
-resource "azurerm_resource_group" "test" {
+# Create the resource group
+resource "azurerm_resource_group" "rg" {
   name     = "test-resource-grp"
-  location = "East US"
+  location = "eastus"
 }
 
-resource "azurerm_app_service_plan" "test" {
-  name                = "test-appserviceplan"
-  location            = azurerm_resource_group.test.location
-  resource_group_name = azurerm_resource_group.test.name
-  kind                = "App"
-  sku {
-    tier = "Standard"
-    size = "S1"
-  }
+# Create the Linux App Service Plan
+resource "azurerm_service_plan" "appserviceplan" {
+  name                = "test-app-service-plan"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  os_type             = "Linux"
+  sku_name            = "B1"
 }
 
-resource "azurerm_app_service" "test" {
-  name                = "test-appservice"
-  location            = azurerm_resource_group.test.location
-  resource_group_name = azurerm_resource_group.test.name
-  app_service_plan_id = azurerm_app_service_plan.test.id
-
-  site_config {
-    always_on = true
+# Create the web app, pass in the App Service Plan ID
+resource "azurerm_linux_web_app" "webapp" {
+  name                  = "test-webapp"
+  location              = azurerm_resource_group.rg.location
+  resource_group_name   = azurerm_resource_group.rg.name
+  service_plan_id       = azurerm_service_plan.appserviceplan.id
+  https_only            = true
+  site_config { 
+    minimum_tls_version = "1.2"
   }
 }
